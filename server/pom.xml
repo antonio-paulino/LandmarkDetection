@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>isel.landmarkdetection</groupId>
+    <groupId>isel.CN2425TF</groupId>
     <artifactId>server</artifactId>
     <version>1.0</version>
 
@@ -17,7 +17,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>isel.landmarkDetection</groupId>
+            <groupId>isel.CN2425TF</groupId>
             <artifactId>contract</artifactId>
             <version>1.0</version>
         </dependency>

@@ -1,7 +1,8 @@
 syntax = "proto3";
 option java_multiple_files = true;
-option java_package = "landmarkDetection";
-package landmarkDetection;
+option java_package = "servicestubs";
+package grpcservice;
+
 service Service {
   // ping server for testing service availability
   rpc isAlive(ProtoVoid) returns (TextMessage);

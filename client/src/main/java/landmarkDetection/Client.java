@@ -6,9 +6,9 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.FileInputStream;
 import java.util.Scanner;
+import servicestubs.*;
 
 public class Client {
     private static final Logger logger = LoggerFactory.getLogger(Client.class);
