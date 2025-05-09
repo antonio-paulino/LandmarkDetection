@@ -2,12 +2,20 @@ syntax = "proto3";
 option java_multiple_files = true;
 option java_package = "landmarkDetection";
 package landmarkDetection;
-service LandmarkDetectionService {
+service Service {
+  // ping server for testing service availability
+  rpc isAlive(ProtoVoid) returns (TextMessage);
   // Send the image to the server by streaming
-  rpc ImageUpload(stream ImageChunk) returns (UploadResult);
+  rpc imageUpload(stream ImageChunk) returns (UploadResult);
 
   // Get the landmark detection result
-  rpc GetDetectionResult(DetectionRequest) returns (DetectionResult);
+  rpc getDetectionResult(DetectionRequest) returns (DetectionResult);
+}
+
+message ProtoVoid {}
+
+message TextMessage {
+  string txt = 1;
 }
 
 message ImageChunk {

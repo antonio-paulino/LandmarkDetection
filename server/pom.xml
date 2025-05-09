@@ -16,13 +16,21 @@
     </properties>
 
     <dependencies>
-
         <dependency>
             <groupId>isel.landmarkDetection</groupId>
             <artifactId>contract</artifactId>
             <version>1.0</version>
         </dependency>
-
+        <dependency>
+            <groupId>com.google.cloud</groupId>
+            <artifactId>google-cloud-storage</artifactId>
+            <version>2.50.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>2.0.17</version>
+        </dependency>
     </dependencies>
 
     <build>
