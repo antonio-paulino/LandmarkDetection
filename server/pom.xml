@@ -16,13 +16,13 @@
     </properties>
 
     <dependencies>
-        <!--
-         <dependency>
+
+        <dependency>
             <groupId>isel.landmarkDetection</groupId>
             <artifactId>contract</artifactId>
             <version>1.0</version>
         </dependency>
-         -->
+
     </dependencies>
 
     <build>

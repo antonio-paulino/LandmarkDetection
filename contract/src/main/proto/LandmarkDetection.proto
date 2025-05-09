@@ -1,0 +1,35 @@
+syntax = "proto3";
+option java_multiple_files = true;
+option java_package = "landmarkDetection";
+package landmarkDetection;
+service LandmarkDetectionService {
+  // Send the image to the server by streaming
+  rpc ImageUpload(stream ImageChunk) returns (UploadResult);
+
+  // Get the landmark detection result
+  rpc GetDetectionResult(DetectionRequest) returns (DetectionResult);
+}
+
+message ImageChunk {
+  bytes imageChunk = 1;
+}
+
+message UploadResult {
+  string request_id = 1;
+}
+
+message DetectionRequest {
+  string request_id = 1;
+}
+
+message DetectionResult {
+  string request_id = 1;
+  repeated Landmark landmarks = 2;
+}
+
+message Landmark {
+  string name = 1;
+  float latitude = 2;
+  float longitude = 3;
+  float confidence = 4;
+}
