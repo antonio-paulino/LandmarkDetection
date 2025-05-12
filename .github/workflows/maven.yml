@@ -1,0 +1,35 @@
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 21 (Amazon Corretto)
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'corretto'
+        java-version: '21'
+        cache: 'maven'
+
+    # Step 1: Package and install the contract module
+    - name: Package and install contract module
+      run: mvn -pl contract clean package install
+
+    # Step 2: Build the server module (contract already installed)
+    - name: Build server module
+      run: mvn -pl server clean package
+
+    # Step 3: Build the client module (contract already installed)
+    - name: Build client module
+      run: mvn -pl client clean package
