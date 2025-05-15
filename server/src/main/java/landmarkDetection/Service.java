@@ -6,7 +6,6 @@ import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
-import com.google.gson.Gson;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
 import com.google.pubsub.v1.TopicName;
@@ -97,19 +96,18 @@ public class Service extends ServiceGrpc.ServiceImplBase {
                 try {
 
                     PubsubMessage message = PubsubMessage.newBuilder()
-                            .putAttributes("requestId", payload.requestId)
-                            .putAttributes("bucket", payload.bucket)
-                            .putAttributes("blob", payload.blob)
+                            .setData(ByteString.copyFromUtf8(payload.toString()))
                             .build();
-
                     publisher.publish(message).get();
-                    publisher.shutdown();
 
                 } catch (Exception e) {
                     logger.error("Failed to publish to Pub/Sub: {}", e.getMessage());
+                    publisher.shutdown();
                     responseObserver.onError(
                             Status.INTERNAL.withDescription("Failed to publish to Pub/Sub").withCause(e).asRuntimeException()
                     );
+                } finally {
+                    publisher.shutdown();
                 }
 
             }

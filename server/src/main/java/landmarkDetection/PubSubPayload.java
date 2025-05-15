@@ -1,5 +1,7 @@
 package landmarkDetection;
 
+import com.google.gson.Gson;
+
 public class PubSubPayload {
     public String requestId;
     public String bucket;
@@ -9,5 +11,14 @@ public class PubSubPayload {
         this.requestId = requestId;
         this.bucket = bucket;
         this.blob = blob;
+    }
+
+    @Override
+    public String toString() {
+        return new Gson().toJson(this);
+    }
+
+    public static PubSubPayload fromString(String json) {
+        return new Gson().fromJson(json, PubSubPayload.class);
     }
 }
