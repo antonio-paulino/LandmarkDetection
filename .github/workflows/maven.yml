@@ -1,0 +1,33 @@
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up JDK 21 (Amazon Corretto)
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'corretto'
+        java-version: '21'
+
+    - name: Build and install contract module
+      working-directory: contract
+      run: mvn clean package install
+
+    - name: Build server module
+      working-directory: server
+      run: mvn clean package
+
+    - name: Build client module
+      working-directory: client
+      run: mvn clean package
