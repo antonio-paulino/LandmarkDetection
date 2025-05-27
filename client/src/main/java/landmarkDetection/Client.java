@@ -6,8 +6,10 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.FileInputStream;
 import java.util.Scanner;
+
 import servicestubs.*;
 
 public class Client {
@@ -21,7 +23,7 @@ public class Client {
 
     public static void main(String[] args) {
         try {
-            if (args.length == 2){
+            if (args.length == 2) {
                 svcIP = args[0];
                 svcPort = Integer.parseInt(args[1]);
             }
@@ -36,7 +38,7 @@ public class Client {
 
             boolean end = false;
 
-            while (!end){
+            while (!end) {
                 try {
                     int option = Menu();
 
@@ -46,6 +48,9 @@ public class Client {
                             break;
                         case 2:
                             uploadImage();
+                            break;
+                        case 3:
+                            getImageInfo();
                             break;
                         case 99:
                             end = true;
@@ -62,12 +67,12 @@ public class Client {
         }
     }
 
-    static void isAlive(){
+    static void isAlive() {
         TextMessage reply = blockingStub.isAlive(ProtoVoid.newBuilder().build());
         System.out.println("Ping server: " + reply.getTxt());
     }
 
-    static void uploadImage(){
+    static void uploadImage() {
         String imagePath = read("Enter image path: ", new Scanner(System.in));
         final boolean[] uploadCompleted = {false};
 
@@ -116,7 +121,71 @@ public class Client {
 
     }
 
-    private static int Menu(){
+    static void getImageInfo() {
+        String requestId = read("Enter request ID: ", new Scanner(System.in));
+
+        Scanner scan = new Scanner(System.in);
+        int op;
+        do {
+            System.out.println();
+            System.out.println("\n======= Menu =======");
+            System.out.println("1 - Get image results");
+            System.out.println("2 - Get map");
+            System.out.print("Option: ");
+            op = scan.nextInt();
+        } while (op < 1 || op > 2);
+
+        if (op == 1) {
+            getImageResults(requestId);
+        } else if (op == 2) {
+            getMap(requestId);
+        } else {
+            System.out.println("Invalid option. Please try again.");
+        }
+    }
+
+    private static void getImageResults(String requestId) {
+        try {
+            DetectionResult results = blockingStub.getDetectionResult(DetectionRequest.newBuilder().setRequestId(requestId).build());
+            if (results.getLandmarksCount() > 0) {
+                System.out.println("Landmarks detected:");
+                results.getLandmarksList().forEach(landmark ->
+                        System.out.println(" - " + landmark.getName() + " at " + landmark.getLatitude() + ", " + landmark.getLongitude() + " with confidence " + landmark.getConfidence() + "%")
+                );
+            } else {
+                System.out.println("No landmarks detected for request ID: " + requestId);
+            }
+        } catch (Exception e) {
+            logger.error("Error retrieving image results: {}", e.getMessage());
+
+        }
+    }
+
+    private static void getMap(String requestId) {
+        try {
+            MapResponse mapResponse = blockingStub.getMap(DetectionRequest.newBuilder().setRequestId(requestId).build());
+            if (mapResponse.getMapURL().isEmpty()) {
+                System.out.println("No map available for request ID: " + requestId);
+                return;
+            }
+
+            ImageChunk img = mapResponse.getMapImage();
+            if (img.getImageChunk().isEmpty()) {
+                System.out.println("No image data received.");
+                return;
+            }
+
+
+            byte[] imageBytes = img.getImageChunk().toByteArray();
+            java.nio.file.Files.write(java.nio.file.Paths.get("map_result_"+ requestId +".jpg"), imageBytes);
+            System.out.println("Map image saved as map_result.jpg");
+
+        } catch (Exception e) {
+            logger.error("Error retrieving map: {}", e.getMessage());
+        }
+    }
+
+    private static int Menu() {
         int op;
         Scanner scan = new Scanner(System.in);
         do {
@@ -124,10 +193,11 @@ public class Client {
             System.out.println("\n======= Menu =======");
             System.out.println(" 1 - isAlive");
             System.out.println(" 2 - Upload Image");
+            System.out.println(" 3 - Get Image Info");
             System.out.println("99 - Exit");
             System.out.print("Option: ");
             op = scan.nextInt();
-        } while (!((op >= 1 && op <= 2) || op == 99));
+        } while (!((op >= 1 && op <= 3) || op == 99));
         return op;
     }
 

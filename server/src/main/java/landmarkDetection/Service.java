@@ -2,18 +2,18 @@ package landmarkDetection;
 
 import com.google.cloud.WriteChannel;
 import com.google.cloud.pubsub.v1.Publisher;
-import com.google.cloud.storage.BlobId;
-import com.google.cloud.storage.BlobInfo;
-import com.google.cloud.storage.Storage;
-import com.google.cloud.storage.StorageOptions;
+import com.google.cloud.storage.*;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
 import com.google.pubsub.v1.TopicName;
 import io.grpc.stub.StreamObserver;
+
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.UUID;
+
 import io.grpc.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,8 +75,6 @@ public class Service extends ServiceGrpc.ServiceImplBase {
                     uploadToCloudStorage(blobName, imageData);
                     String requestId = blobName;
 
-
-
                     PubSubPayload payload = new PubSubPayload(requestId, bucketName, blobName);
 
                     publishToPubSub(payload);
@@ -92,28 +90,9 @@ public class Service extends ServiceGrpc.ServiceImplBase {
                 }
             }
 
-            private void publishToPubSub(PubSubPayload payload) {
-                try {
-
-                    PubsubMessage message = PubsubMessage.newBuilder()
-                            .setData(ByteString.copyFromUtf8(payload.toString()))
-                            .build();
-                    publisher.publish(message).get();
-
-                } catch (Exception e) {
-                    logger.error("Failed to publish to Pub/Sub: {}", e.getMessage());
-                    publisher.shutdown();
-                    responseObserver.onError(
-                            Status.INTERNAL.withDescription("Failed to publish to Pub/Sub").withCause(e).asRuntimeException()
-                    );
-                } finally {
-                    publisher.shutdown();
-                }
-
-            }
             private void uploadToCloudStorage(String blob, byte[] data) throws IOException {
                 BlobId blobId = BlobId.of(bucketName, blob);
-                BlobInfo blobInfo = BlobInfo.newBuilder(blobId).setContentType("image/jpeg").build();
+                BlobInfo blobInfo = BlobInfo.newBuilder(blobId).setContentType("image/jpg").build();
 
                 if (data.length < 1_000_000) {
                     storage.create(blobInfo, data);
@@ -126,5 +105,75 @@ public class Service extends ServiceGrpc.ServiceImplBase {
                 logger.info("Upload to Cloud Storage completed for blob: {}", blob);
             }
         };
+    }
+
+    private void publishToPubSub(PubSubPayload payload) {
+        try {
+
+            PubsubMessage message = PubsubMessage.newBuilder()
+                    .setData(ByteString.copyFromUtf8(payload.toString()))
+                    .build();
+            publisher.publish(message).get();
+
+        } catch (Exception e) {
+            logger.error("Failed to publish to Pub/Sub: {}", e.getMessage());
+            publisher.shutdown();
+        } finally {
+            publisher.shutdown();
+        }
+
+    }
+
+    public static byte[] toByteArray(BufferedImage image) {
+        try (java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream()) {
+            javax.imageio.ImageIO.write(image, "jpg", baos);
+            return baos.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to convert image to byte array: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void getMap(DetectionRequest request, StreamObserver<MapResponse> responseObserver) {
+        String requestId = request.getRequestId();
+        logger.info("Received Image info request for id: {}", requestId);
+
+        try {
+
+            Blob blob = storage.get(BlobId.of(bucketName, requestId));
+            if (blob == null) {
+                responseObserver.onError(Status.NOT_FOUND.withDescription("Image not found").asRuntimeException());
+                return;
+            }
+
+            publishToPubSub(new PubSubPayload(requestId, bucketName, blob.getName()));
+
+            // TODO: obter informações da imagem do Firestore
+
+            BufferedImage imageData = GoogleMapsImage.getImage(38.756881,-9.116445);
+
+            ImageChunk imageChunk = ImageChunk.newBuilder()
+                    .setImageChunk(ByteString.copyFrom(toByteArray(imageData)))
+                    .build();
+
+            MapResponse mapResponse = MapResponse.newBuilder()
+                    .setMapURL(GoogleMapsImage.getImageUrl(38.756881,-9.116445))
+                    .setMapImage(imageChunk)
+                    .build();
+
+            responseObserver.onNext(mapResponse);
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            logger.error("Failed to get the mapImage: {}", e.getMessage());
+            responseObserver.onError(
+                    Status.INTERNAL.withDescription("Failed to get the mapImage").withCause(e).asRuntimeException()
+            );
+        }
+    }
+    @Override
+    public void getDetectionResult(DetectionRequest request, StreamObserver<DetectionResult> responseObserver) {
+        String requestId = request.getRequestId();
+        logger.info("Received detection result request for id: {}", requestId);
+
     }
 }

@@ -11,6 +11,8 @@ service Service {
 
   // Get the landmark detection result
   rpc getDetectionResult(DetectionRequest) returns (DetectionResult);
+
+  rpc getMap(DetectionRequest) returns (MapResponse);
 }
 
 message ProtoVoid {}
@@ -21,6 +23,11 @@ message TextMessage {
 
 message ImageChunk {
   bytes imageChunk = 1;
+}
+
+message MapResponse {
+  string mapURL = 1;
+  ImageChunk mapImage = 2;
 }
 
 message UploadResult {
