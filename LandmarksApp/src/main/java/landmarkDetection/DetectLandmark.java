@@ -56,27 +56,26 @@ public class DetectLandmark {
     }
 
     private static void saveToFirestore(List<Landmark> landmarks, String requestId) throws IOException, ExecutionException, InterruptedException {
-        FirestoreOptions firestoreOptions =
-                FirestoreOptions.getDefaultInstance().toBuilder()
+        Firestore db = FirestoreOptions.getDefaultInstance().toBuilder()
                         .setDatabaseId("cn2425-t1-g11")
                         .setCredentials(GoogleCredentials.getApplicationDefault())
-                        .build();
-        Firestore db = firestoreOptions.getService();
+                .build()
+                .getService();
 
-        Map<String, Object> data = new HashMap<>();
         List<Map<String, Object>> landmarkList = new ArrayList<>();
-
         for (Landmark landmark : landmarks) {
-            Map<String, Object> lm = new HashMap<>();
-            lm.put("name", landmark.name());
-            lm.put("latitude", landmark.latitude());
-            lm.put("longitude", landmark.longitude());
-            lm.put("confidence", landmark.confidence());
-            landmarkList.add(lm);
+            landmarkList.add(Map.of(
+                    "name", landmark.name(),
+                    "latitude", landmark.latitude(),
+                    "longitude", landmark.longitude(),
+                    "confidence", landmark.confidence()
+            ));
         }
 
-        data.put("landmarks", landmarkList);
-        data.put("timestamp", new Date());
+        Map<String, Object> data = Map.of(
+                "landmarks", landmarkList,
+                "timestamp", new Date()
+        );
 
         ApiFuture<WriteResult> result = db.collection("landmark-detections").document(requestId).set(data);
         System.out.println("Firestore write time: " + result.get().getUpdateTime());

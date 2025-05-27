@@ -18,7 +18,7 @@ public class GoogleMapsImage {
 
     public static String getImageUrl(double latitude, double longitude) {
         return String.format(
-                "%s?center=%f,%f&zoom=15&size=%s&markers=color:red|%f,%f&key=%s",
+                "%s?center=%f,%f&zoom=15&size=%s&markers=color:red|%f,%f&key=%s&scale=2",
                 baseUrl, latitude, longitude, size, latitude, longitude, apiKey
         );
     }

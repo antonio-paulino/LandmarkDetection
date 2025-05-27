@@ -1,6 +1,10 @@
 package landmarkDetection;
 
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.WriteChannel;
+import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.FirestoreOptions;
 import com.google.cloud.pubsub.v1.Publisher;
 import com.google.cloud.storage.*;
 import com.google.protobuf.ByteString;
@@ -12,6 +16,8 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import io.grpc.Status;
@@ -26,9 +32,17 @@ public class Service extends ServiceGrpc.ServiceImplBase {
     private final String bucketName = "cn2425-t1-g11";
     private final Publisher publisher;
 
+    private final Firestore firestore;
+
     public Service(int svcPort) throws IOException {
         this.storage = StorageOptions.getDefaultInstance().getService();
         this.publisher = Publisher.newBuilder(TopicName.of("cn2425-t1-g11", "landmark-detection-topic")).build();
+        this.firestore = FirestoreOptions.getDefaultInstance()
+                .toBuilder()
+                .setDatabaseId("cn2425-t1-g11")
+                .setCredentials(GoogleCredentials.getApplicationDefault())
+                .build()
+                .getService();
         logger.info("gRPC service is running on port: {}", svcPort);
     }
 
@@ -136,40 +150,54 @@ public class Service extends ServiceGrpc.ServiceImplBase {
     @Override
     public void getMap(DetectionRequest request, StreamObserver<MapResponse> responseObserver) {
         String requestId = request.getRequestId();
-        logger.info("Received Image info request for id: {}", requestId);
+        logger.info("Received getMap request for ID: {}", requestId);
 
         try {
-
-            Blob blob = storage.get(BlobId.of(bucketName, requestId));
-            if (blob == null) {
+            if (storage.get(BlobId.of(bucketName, requestId)) == null) {
                 responseObserver.onError(Status.NOT_FOUND.withDescription("Image not found").asRuntimeException());
                 return;
             }
 
-            publishToPubSub(new PubSubPayload(requestId, bucketName, blob.getName()));
+            DocumentSnapshot document = firestore.collection("landmark-detections")
+                    .document(requestId)
+                    .get().get();
 
-            // TODO: obter informações da imagem do Firestore
+            if (!document.exists()) {
+                responseObserver.onError(Status.NOT_FOUND.withDescription("Detection not found").asRuntimeException());
+                return;
+            }
 
-            BufferedImage imageData = GoogleMapsImage.getImage(38.756881,-9.116445);
 
-            ImageChunk imageChunk = ImageChunk.newBuilder()
-                    .setImageChunk(ByteString.copyFrom(toByteArray(imageData)))
+            List<Map<String, Object>> landmarks = (List<Map<String, Object>>) document.get("landmarks");
+
+            if (landmarks == null || landmarks.isEmpty()) {
+                responseObserver.onError(Status.NOT_FOUND.withDescription("No landmarks found").asRuntimeException());
+                return;
+            }
+
+            Map<String, Object> landmark = landmarks.getFirst();
+            double lat = ((Number) landmark.get("latitude")).doubleValue();
+            double lng = ((Number) landmark.get("longitude")).doubleValue();
+
+            BufferedImage mapImage = GoogleMapsImage.getImage(lat, lng);
+            String mapUrl = GoogleMapsImage.getImageUrl(lat, lng);
+
+            MapResponse response = MapResponse.newBuilder()
+                    .setMapURL(mapUrl)
+                    .setMapImage(ImageChunk.newBuilder()
+                            .setImageChunk(ByteString.copyFrom(toByteArray(mapImage)))
+                            .build())
                     .build();
 
-            MapResponse mapResponse = MapResponse.newBuilder()
-                    .setMapURL(GoogleMapsImage.getImageUrl(38.756881,-9.116445))
-                    .setMapImage(imageChunk)
-                    .build();
-
-            responseObserver.onNext(mapResponse);
+            responseObserver.onNext(response);
             responseObserver.onCompleted();
+
         } catch (Exception e) {
-            logger.error("Failed to get the mapImage: {}", e.getMessage());
-            responseObserver.onError(
-                    Status.INTERNAL.withDescription("Failed to get the mapImage").withCause(e).asRuntimeException()
-            );
+            logger.error("Error in getMap: {}", e.getMessage());
+            responseObserver.onError(Status.INTERNAL.withDescription("Internal error").withCause(e).asRuntimeException());
         }
     }
+
     @Override
     public void getDetectionResult(DetectionRequest request, StreamObserver<DetectionResult> responseObserver) {
         String requestId = request.getRequestId();
