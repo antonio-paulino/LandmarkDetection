@@ -5,7 +5,7 @@
     <groupId>gcfv2</groupId>
     <artifactId>http</artifactId>
     <version>0.0.1</version>
-    <name>HTTP Function</name>
+    <name>cloudFunction</name>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
