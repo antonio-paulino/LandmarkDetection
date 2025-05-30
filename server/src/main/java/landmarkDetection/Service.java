@@ -203,5 +203,35 @@ public class Service extends ServiceGrpc.ServiceImplBase {
         String requestId = request.getRequestId();
         logger.info("Received detection result request for id: {}", requestId);
 
+        try {
+            DocumentSnapshot document = firestore.collection("landmark-detections")
+                    .document(requestId)
+                    .get().get();
+
+            if (!document.exists()) {
+                responseObserver.onError(Status.NOT_FOUND.withDescription("Detection not found").asRuntimeException());
+                return;
+            }
+
+            List<Map<String, Object>> landmarks = (List<Map<String, Object>>) document.get("landmarks");
+
+            DetectionResult.Builder resultBuilder = DetectionResult.newBuilder();
+
+            if (landmarks != null && !landmarks.isEmpty()) {
+                Map<String, Object> landmark = landmarks.getFirst();
+                Landmark.Builder landmarkBuilder = Landmark.newBuilder()
+                        .setName((String) landmark.get("name"))
+                        .setLatitude(((Number) landmark.get("latitude")).doubleValue())
+                        .setLongitude(((Number) landmark.get("longitude")).doubleValue())
+                        .setConfidence(((Number) landmark.get("confidence")).floatValue());
+                resultBuilder.addLandmarks(landmarkBuilder);
+            }
+
+            responseObserver.onNext(resultBuilder.build());
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            logger.error("Error retrieving detection result: {}", e.getMessage());
+            responseObserver.onError(Status.INTERNAL.withDescription("Internal error").withCause(e).asRuntimeException());
+        }
     }
 }

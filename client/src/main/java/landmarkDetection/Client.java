@@ -8,14 +8,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
 
 import servicestubs.*;
 
 public class Client {
     private static final Logger logger = LoggerFactory.getLogger(Client.class);
-    private static String svcIP = "localhost";
-    private static int svcPort = 8000;
 
     private static ServiceGrpc.ServiceBlockingStub blockingStub;
     private static ServiceGrpc.ServiceStub nonBlockingStub;
@@ -23,10 +24,15 @@ public class Client {
 
     public static void main(String[] args) {
         try {
-            if (args.length == 2) {
-                svcIP = args[0];
-                svcPort = Integer.parseInt(args[1]);
+            List<String> ips = getGrpcServerIps();
+            if (ips.isEmpty()) {
+                System.out.println("No ip fund.");
+                return;
             }
+            String svcIP = ips.get(new Random().nextInt(ips.size()));
+            int svcPort = 8000;
+
+
             logger.info("Connecting to server {}:{}", svcIP, svcPort);
             System.out.println("Connecting to server " + svcIP + ":" + svcPort);
 
@@ -150,7 +156,7 @@ public class Client {
             if (results.getLandmarksCount() > 0) {
                 System.out.println("Landmarks detected:");
                 results.getLandmarksList().forEach(landmark ->
-                        System.out.println(" - " + landmark.getName() + " at " + landmark.getLatitude() + ", " + landmark.getLongitude() + " with confidence " + landmark.getConfidence() + "%")
+                        System.out.println(" - " + landmark.getName() + " at " + landmark.getLatitude() + ", " + landmark.getLongitude() + " with confidence " + landmark.getConfidence())
                 );
             } else {
                 System.out.println("No landmarks detected for request ID: " + requestId);
@@ -204,6 +210,34 @@ public class Client {
     private static String read(String msg, Scanner input) {
         System.out.print(msg);
         return input.nextLine();
+    }
+
+    private static List<String> getGrpcServerIps() {
+        String url = "https://cn-http-function-269388437762.europe-southwest1.run.app/?group=instance-group-grpc";
+        List<String> ips = new ArrayList<>();
+        try {
+            java.net.URL obj = new java.net.URL(url);
+            java.net.HttpURLConnection con = (java.net.HttpURLConnection) obj.openConnection();
+            con.setRequestMethod("GET");
+
+            int responseCode = con.getResponseCode();
+            if (responseCode == 200) {
+                try (java.io.BufferedReader in = new java.io.BufferedReader(
+                        new java.io.InputStreamReader(con.getInputStream()))) {
+                    String response = in.readLine();
+                    if (response != null && !response.isEmpty()) {
+                        for (String ip : response.split(",")) {
+                            ips.add(ip.trim());
+                        }
+                    }
+                }
+            } else {
+                System.out.println("Error Get IPs, Code HTTP: " + responseCode);
+            }
+        } catch (Exception e) {
+            System.out.println("Error Get IPs: " + e.getMessage());
+        }
+        return ips;
     }
 
 }

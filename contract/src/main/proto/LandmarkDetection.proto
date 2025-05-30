@@ -45,7 +45,7 @@ message DetectionResult {
 
 message Landmark {
   string name = 1;
-  float latitude = 2;
-  float longitude = 3;
-  float confidence = 4;
+  double latitude = 2;
+  double longitude = 3;
+  double confidence = 4;
 }
