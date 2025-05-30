@@ -213,7 +213,7 @@ public class Client {
     }
 
     private static List<String> getGrpcServerIps() {
-        String url = "https://cn-http-function-269388437762.europe-southwest1.run.app/?group=instance-group-grpc";
+        String url = "https://cn-http-function-269388437762.europe-southwest1.run.app/?group=vm-grpc-instance-group";
         List<String> ips = new ArrayList<>();
         try {
             java.net.URL obj = new java.net.URL(url);
