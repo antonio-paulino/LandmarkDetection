@@ -23,7 +23,11 @@ jobs:
     - name: Build and install contract module
       working-directory: contract
       run: mvn clean package install
-
+    
+    - name: Build and install cloudFunction module
+      working-directory: cloudFunction
+      run: mvn clean package
+      
     - name: Build server module
       working-directory: server
       run: mvn clean package
