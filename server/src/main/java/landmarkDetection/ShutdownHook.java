@@ -2,8 +2,10 @@ package landmarkDetection;
 
 public class ShutdownHook extends Thread {
     io.grpc.Server svc;
+    Service service;
 
-    public ShutdownHook(io.grpc.Server svc) {
+    public ShutdownHook(io.grpc.Server svc, Service service) {
+        this.service = service;
         this.svc = svc;
     }
 
@@ -13,6 +15,7 @@ public class ShutdownHook extends Thread {
         try {
             // Initiates an orderly shutdown in which preexisting calls continue
             // but new calls are rejected. So we can clean and finish work
+            service.shutdownPublisher();
             svc.shutdown();
             svc.awaitTermination();
         } catch (InterruptedException e) {

@@ -13,14 +13,15 @@ public class Server {
         try {
             if (args.length > 0) svcPort = Integer.parseInt(args[0]);
 
+            Service service = new Service(svcPort);
             io.grpc.Server svc = ServerBuilder.forPort(svcPort)
-                    .addService(new Service(svcPort))
+                    .addService(service)
                     .build();
 
             svc.start();
             logger.info("gRPC server started successfully on port: {}", svcPort);
 
-            Runtime.getRuntime().addShutdownHook(new ShutdownHook(svc));
+            Runtime.getRuntime().addShutdownHook(new ShutdownHook(svc, service));
             logger.info("Shutdown hook registered.");
 
             svc.awaitTermination();

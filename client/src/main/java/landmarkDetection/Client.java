@@ -24,13 +24,26 @@ public class Client {
 
     public static void main(String[] args) {
         try {
-            List<String> ips = getGrpcServerIps();
+            int svcPort = 8000;
+            List<String> ips = new ArrayList<>();
+
+            if (args.length > 0) {
+                for (String arg : args) {
+                    if (arg.matches("\\d+")) {
+                        svcPort = Integer.parseInt(arg);
+                    } else {
+                        ips.add(arg.trim());
+                    }
+                }
+            } else {
+                ips = getGrpcServerIps();
+            }
+
             if (ips.isEmpty()) {
-                System.out.println("No ip fund.");
+                System.out.println("No IP found.");
                 return;
             }
             String svcIP = ips.get(new Random().nextInt(ips.size()));
-            int svcPort = 8000;
 
 
             logger.info("Connecting to server {}:{}", svcIP, svcPort);

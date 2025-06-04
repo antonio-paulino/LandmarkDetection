@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import io.grpc.Status;
 import org.slf4j.Logger;
@@ -131,11 +132,7 @@ public class Service extends ServiceGrpc.ServiceImplBase {
 
         } catch (Exception e) {
             logger.error("Failed to publish to Pub/Sub: {}", e.getMessage());
-            publisher.shutdown();
-        } finally {
-            publisher.shutdown();
         }
-
     }
 
     public static byte[] toByteArray(BufferedImage image) {
@@ -234,4 +231,17 @@ public class Service extends ServiceGrpc.ServiceImplBase {
             responseObserver.onError(Status.INTERNAL.withDescription("Internal error").withCause(e).asRuntimeException());
         }
     }
+
+    public void shutdownPublisher() {
+        try {
+            if (publisher != null) {
+                publisher.shutdown();
+                publisher.awaitTermination(1, TimeUnit.MINUTES);
+                logger.info("Publisher shut down successfully.");
+            }
+        } catch (Exception e) {
+            logger.error("Error shutting down publisher: ", e);
+        }
+    }
+
 }
