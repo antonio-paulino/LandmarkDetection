@@ -202,8 +202,8 @@ public class Client {
 
 
             byte[] imageBytes = img.getImageChunk().toByteArray();
-            java.nio.file.Files.write(java.nio.file.Paths.get("map_result_"+ requestId +".jpg"), imageBytes);
-            System.out.println("Map image saved as map_result_" + requestId + ".jpg");
+            java.nio.file.Files.write(java.nio.file.Paths.get("map_result_" + requestId + ".jpg"), imageBytes);
+            System.out.println("Map saved: map_result_" + requestId + ".jpg");
 
         } catch (Exception e) {
             logger.error("Error retrieving map: {}", e.getMessage());
