@@ -37,11 +37,11 @@ jobs:
       run: mvn clean package
       
     - name: Build vmAdmin module
-      working-directory: VMAdmin
+      working-directory: vmAdmin
       run: mvn clean package
 
-    - name: Build LandmarksApp module
-      working-directory: LandmarksApp
+    - name: Build landmarksApp module
+      working-directory: landmarksApp
       run: mvn clean package
 
     - name: Build cloudFunction module
