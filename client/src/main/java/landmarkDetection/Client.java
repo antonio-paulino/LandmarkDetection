@@ -155,24 +155,30 @@ public class Client {
         } while (op < 1 || op > 2);
 
         if (op == 1) {
-            getImageResults(requestId);
-        } else if (op == 2) {
-            getMap(requestId);
+            Double minConfidence = Double.valueOf(read("Enter minimum confidence (0.0 - 1.0): ", new Scanner(System.in)));
+            if (minConfidence < 0.0 || minConfidence > 1.0) {
+                System.out.println("Invalid confidence value. Please enter a value between 0.0 and 1.0.");
+                return;
+            }
+
+            System.out.println("Retrieving image results for request ID: " + requestId + " with minimum confidence: " + minConfidence);
+
+            getImageResults(requestId, minConfidence);
         } else {
-            System.out.println("Invalid option. Please try again.");
+            getMap(requestId);
         }
     }
 
-    private static void getImageResults(String requestId) {
+    private static void getImageResults(String requestId, Double minConfidence) {
         try {
-            DetectionResult results = blockingStub.getDetectionResult(DetectionRequest.newBuilder().setRequestId(requestId).build());
+            DetectionResult results = blockingStub.getDetectionResult(DetectionRequest.newBuilder().setRequestId(requestId).setMinConfidence(minConfidence).build());
             if (results.getLandmarksCount() > 0) {
                 System.out.println("Landmarks detected:");
                 results.getLandmarksList().forEach(landmark ->
                         System.out.println(" - " + landmark.getName() + " at " + landmark.getLatitude() + ", " + landmark.getLongitude() + " with confidence " + landmark.getConfidence())
                 );
             } else {
-                System.out.println("No landmarks detected for request ID: " + requestId);
+                System.out.println("No landmarks detected for request ID: " + requestId + " with confidence above " + minConfidence);
             }
         } catch (Exception e) {
             logger.error("Error retrieving image results: {}", e.getMessage());

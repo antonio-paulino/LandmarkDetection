@@ -198,12 +198,14 @@ public class Service extends ServiceGrpc.ServiceImplBase {
     @Override
     public void getDetectionResult(DetectionRequest request, StreamObserver<DetectionResult> responseObserver) {
         String requestId = request.getRequestId();
+        double minConfidence = request.getMinConfidence();
         logger.info("Received detection result request for id: {}", requestId);
 
         try {
             DocumentSnapshot document = firestore.collection("landmark-detections")
                     .document(requestId)
-                    .get().get();
+                    .get()
+                    .get();
 
             if (!document.exists()) {
                 responseObserver.onError(Status.NOT_FOUND.withDescription("Detection not found").asRuntimeException());
@@ -214,14 +216,17 @@ public class Service extends ServiceGrpc.ServiceImplBase {
 
             DetectionResult.Builder resultBuilder = DetectionResult.newBuilder();
 
-            if (landmarks != null && !landmarks.isEmpty()) {
-                Map<String, Object> landmark = landmarks.getFirst();
-                Landmark.Builder landmarkBuilder = Landmark.newBuilder()
-                        .setName((String) landmark.get("name"))
-                        .setLatitude(((Number) landmark.get("latitude")).doubleValue())
-                        .setLongitude(((Number) landmark.get("longitude")).doubleValue())
-                        .setConfidence(((Number) landmark.get("confidence")).floatValue());
-                resultBuilder.addLandmarks(landmarkBuilder);
+            assert landmarks != null;
+            for (Map<String, Object> landmark : landmarks) {
+                float confidence = ((Number) landmark.get("confidence")).floatValue();
+                if (confidence > minConfidence) {
+                    Landmark.Builder landmarkBuilder = Landmark.newBuilder()
+                            .setName((String) landmark.get("name"))
+                            .setLatitude(((Number) landmark.get("latitude")).doubleValue())
+                            .setLongitude(((Number) landmark.get("longitude")).doubleValue())
+                            .setConfidence(confidence);
+                    resultBuilder.addLandmarks(landmarkBuilder);
+                }
             }
 
             responseObserver.onNext(resultBuilder.build());
