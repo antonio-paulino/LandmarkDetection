@@ -11,9 +11,11 @@ O CN2425TF é um sistema distribuído desenvolvido em Java, que permite a submis
 O sistema é modular, escalável e suporta elasticidade, sendo composto por cinco componentes principais:
 - **client/**: Cliente gRPC para submissão e consulta de imagens/resultados.
 - **cloudFunction/**: Cloud Function para integração.
-- **server/**: Servidor gRPC (fachada do sistema, orquestração de tarefas).
-- **LandmarksApp/**: Worker para processamento de imagens e integração com Vision API.
 - **contract/**: Contrato Protocol Buffers (.proto) para o serviço gRPC.
+- **landmarksApp/**: Worker para processamento de imagens e integração com Vision API.
+- **server/**: Servidor gRPC (fachada do sistema, orquestração de tarefas).
+- **vmAdmin/**: Módulo de administração de máquinas virtuais.
+
 
 ---
 
@@ -23,8 +25,9 @@ O sistema é modular, escalável e suporta elasticidade, sendo composto por cinc
 client/           # Cliente gRPC
 cloudFunction/    # Código cloudFunction
 contract/         # Compiler .proto
-LandmarksApp/     # Worker para deteção de landmarks
+landmarksApp/     # Worker para deteção de landmarks
 server/           # Servidor gRPC
+vmAdmin/          # VM Admin
 README.md         # Este ficheiro
 
 ````
@@ -59,7 +62,7 @@ README.md         # Este ficheiro
 
 4. **Colocar o ficheiro de credenciais do Service Account** no diretório de cada componente, ou definir a variável de ambiente `GOOGLE_APPLICATION_CREDENTIALS` para apontar para esse ficheiro.
 
-5. **Editar configurações** criar um ficheiro .env com `GOOGLE_MAPS_API_KEY=`
+5. **Criar um ficheiro** .env com `GOOGLE_MAPS_API_KEY=`
 
 ---
 
@@ -75,6 +78,9 @@ cd ../LandmarksApp
 mvn package
 
 cd ../client
+mvn package
+
+cd ../vmAdmin
 mvn package
 ```
 
@@ -98,7 +104,7 @@ O worker subscreve ao Pub/Sub, processando novas imagens automaticamente.<br>
 
 ```sh
 cd server
-java -jar target/server-1.0-jar-with-dependencies.jar
+java -jar target/server-1.0-jar-with-dependencies.jar <port>
 ```
 
 O servidor fica à escuta de pedidos gRPC dos clientes.<br>
@@ -106,14 +112,21 @@ O servidor fica à escuta de pedidos gRPC dos clientes.<br>
 * Ficheiro `.env` com a chave da API
 * Ficheiro `.json` com as credenciais da Service Account
 
+Se não for especificada, a porta padrão é `8000`.
+
 ---
 
 ### 3. Executar o Cliente
 
 ```sh
 cd client
-java -jar target/client-1.0-jar-with-dependencies.jar
+java -jar target/client-1.0-jar-with-dependencies.jar <server_address> <port>
 ```
+
+O cliente conecta ao servidor gRPC e permite submeter imagens e consultar resultados.<br>
+Se não for especificada, a porta padrão é `8000` e o endereço do servidor é escolhido aleatoriamente utilizando uma 
+cloud functiom.
+
 ---
 
 
