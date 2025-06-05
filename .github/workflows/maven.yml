@@ -35,3 +35,15 @@ jobs:
     - name: Build client module
       working-directory: client
       run: mvn clean package
+      
+    - name: Build vmAdmin module
+      working-directory: VMAdmin
+      run: mvn clean package
+
+    - name: Build LandmarksApp module
+      working-directory: LandmarksApp
+      run: mvn clean package
+
+    - name: Build cloudFunction module
+      working-directory: cloudFunction
+      run: mvn clean package
